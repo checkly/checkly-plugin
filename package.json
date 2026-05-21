@@ -1,0 +1,38 @@
+{
+  "name": "@checkly/checkly-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Checkly skills, agents, and commands for AI coding agents.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/checkly/checkly-plugin.git"
+  },
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync.ts",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "postinstall": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "@types/node": "^24.0.0",
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^5.6.0"
+  },
+  "simple-git-hooks": {
+    "commit-msg": "npx commitlint --edit",
+    "pre-commit": "npm run lint && npm run format:check && npm run typecheck"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

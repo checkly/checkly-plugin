@@ -1,0 +1,21 @@
+{
+  "name": "checkly",
+  "version": "0.0.1",
+  "description": "Checkly skills, agents, and commands for AI coding agents.",
+  "author": {
+    "name": "Checkly",
+    "url": "https://github.com/checkly"
+  },
+  "homepage": "https://www.checklyhq.com",
+  "repository": "https://github.com/checkly/checkly-plugin",
+  "license": "Apache-2.0",
+  "keywords": [
+    "checkly",
+    "monitoring",
+    "synthetic-monitoring",
+    "playwright",
+    "uptime",
+    "api-monitoring",
+    "browser-checks"
+  ]
+}

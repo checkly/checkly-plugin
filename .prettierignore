@@ -1,0 +1,5 @@
+node_modules/
+
+# Externally-authored skills synced from upstream repos.
+# Keep their formatting verbatim — see skills.config.ts.
+skills/checkly/

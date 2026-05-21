@@ -1,0 +1,27 @@
+{
+  "name": "checkly",
+  "owner": {
+    "name": "Checkly"
+  },
+  "plugins": [
+    {
+      "name": "checkly",
+      "source": "./",
+      "description": "Checkly skills, agents, and commands for AI coding agents.",
+      "author": {
+        "name": "Checkly"
+      },
+      "repository": "https://github.com/checkly/checkly-plugin",
+      "license": "Apache-2.0",
+      "keywords": [
+        "checkly",
+        "monitoring",
+        "synthetic-monitoring",
+        "playwright",
+        "uptime",
+        "api-monitoring",
+        "browser-checks"
+      ]
+    }
+  ]
+}
