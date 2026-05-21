@@ -1,5 +1,5 @@
 {
-  "name": "checkly-plugin",
+  "name": "checkly",
   "version": "0.0.1",
   "description": "Checkly skills, agents, and commands for AI coding agents.",
   "author": {
