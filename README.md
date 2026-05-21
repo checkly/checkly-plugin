@@ -1,10 +1,11 @@
 # checkly-plugin
 
-Checkly skills, agents, and commands for AI coding agents packaged as a single plugin that targets Claude Code, Cursor, and generic agent SDKs.
+Checkly skills, agents, and commands for AI coding agents packaged as a single plugin that targets Codex, Claude Code, Cursor, and generic agent SDKs.
 
 ## What's in here
 
 ```
+.codex-plugin/      Codex plugin manifest
 .claude-plugin/      Claude Code marketplace + plugin manifest
 .cursor-plugin/      Cursor plugin manifest
 .plugin/             Generic agent plugin manifest
@@ -14,6 +15,19 @@ skills.config.ts     Declares where each externally-authored skill comes from
 ```
 
 ## Installing
+
+### Codex
+
+```bash
+codex plugin marketplace add checkly/checkly-plugin
+codex
+```
+
+Then open Codex and enable the Checkly plugin via `/plugins`.
+
+```
+/plugins
+```
 
 ### Plugins CLI
 
