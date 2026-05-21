@@ -13,5 +13,11 @@
     "verbatimModuleSyntax": true,
     "types": ["node"]
   },
-  "include": ["skills.config.ts", "scripts/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "checkly.config.ts",
+    "checks/**/*.ts",
+    "skills.config.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts"
+  ]
 }
