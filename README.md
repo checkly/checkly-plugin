@@ -15,6 +15,12 @@ skills.config.ts     Declares where each externally-authored skill comes from
 
 ## Installing
 
+### Plugins CLI
+
+```
+npx plugins add checkly/checkly-plugin
+```
+
 ### Claude Code
 
 ```
