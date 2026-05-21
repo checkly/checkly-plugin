@@ -1,5 +1,6 @@
 {
   "name": "checkly",
+  "description": "Checkly plugin marketplace — skills, agents, and commands for monitoring with AI coding agents.",
   "owner": {
     "name": "Checkly"
   },
