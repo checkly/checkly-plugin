@@ -1,4 +1,4 @@
-import { PlaywrightCheck } from "checkly/constructs";
+import { AlertChannel, PlaywrightCheck } from "checkly/constructs";
 import { aiContextGroup } from "./ai-context.group.ts";
 
 new PlaywrightCheck("checkly-skill-sync", {
@@ -9,6 +9,6 @@ new PlaywrightCheck("checkly-skill-sync", {
   include: ["skills/checkly/**"],
   activated: true,
   runParallel: false,
-  // alertChannels: [AlertChannel.fromId(287691)],
+  alertChannels: [AlertChannel.fromId(287691)],
   group: aiContextGroup,
 });
