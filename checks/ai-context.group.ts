@@ -1,5 +1,6 @@
-import { CheckGroupV2 } from "checkly/constructs";
+import { AlertChannel, CheckGroupV2 } from "checkly/constructs";
 
 export const aiContextGroup = new CheckGroupV2("ai-context", {
   name: "checkly-plugin & AI-Context",
+  alertChannels: [AlertChannel.fromId(287691)],
 });
