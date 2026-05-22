@@ -54,7 +54,7 @@ To bump a synced skill, change its `source.ref` in `skills.config.ts` and run:
 npm run sync
 ```
 
-The sync also runs in CI via `.github/workflows/sync.yml`, triggered manually with `workflow_dispatch`. The workflow runs `npm run sync` against whatever refs are pinned in `skills.config.ts` and opens a PR if any files changed. CI does not bump the pins — that's a manual edit to `skills.config.ts`.
+The sync also runs in CI via `.github/workflows/sync.yml`, on a daily schedule plus manual `workflow_dispatch`. The workflow runs `npm run sync` against whatever refs are pinned in `skills.config.ts` and commits any changes directly to `main`. CI does not bump the pins — that's a manual edit to `skills.config.ts`.
 
 ## Git hooks
 

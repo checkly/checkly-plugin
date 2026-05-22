@@ -1,11 +1,12 @@
 name: Sync skills
 
 on:
+  schedule:
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   sync:
@@ -15,7 +16,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -23,17 +25,14 @@ jobs:
       - name: Run sync
         run: npm run sync
 
-      - name: Open pull request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "chore: sync skills"
-          title: "chore: sync skills"
-          body: |
-            Automated skill sync triggered by `${{ github.event_name }}`.
-
-            Files were pulled per the `source.ref` pinned in `skills.config.ts`. Review the diff before merging.
-          branch: sync/skills
-          delete-branch: true
-          labels: |
-            sync
-            automated
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet skills/; then
+            echo "No skill changes — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add skills/
+          git commit -m "chore: sync skills"
+          git push
