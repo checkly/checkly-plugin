@@ -44,11 +44,7 @@ npx plugins add checkly/checkly-plugin
 
 ### Cursor
 
-Point Cursor at this repo per the Cursor plugin docs — `.cursor-plugin/plugin.json` is the manifest.
-
-### Other agents
-
-Most agent runtimes that follow the conventional `skills/` layout will pick up the skills directly from this repo's root. See `.plugin/plugin.json` for the generic manifest.
+Point Cursor at this repo to install the plugin.
 
 ## Skills shipped here
 
