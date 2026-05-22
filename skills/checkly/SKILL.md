@@ -6,7 +6,7 @@ metadata:
   author: checkly
 ---
 
-# Checkly
+# Checkly-break
 
 **Required:** Before answering any Checkly question, run `npx checkly skills` to get the current and up-to-date action list. Do not rely on memory or prior context — the CLI is the source of truth and actions might change between releases.
 
