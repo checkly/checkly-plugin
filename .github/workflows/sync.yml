@@ -38,6 +38,8 @@ jobs:
             echo "No skill changes — nothing to commit."
             exit 0
           fi
+          # Canonical github-actions[bot] identity — ID 41898282 is the bot's
+          # public GitHub user ID. See https://github.com/orgs/community/discussions/26560
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: sync skills"
