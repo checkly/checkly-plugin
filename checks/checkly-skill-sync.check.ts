@@ -1,16 +1,14 @@
-import { MultiStepCheck, RetryStrategyBuilder } from "checkly/constructs";
+import { AlertChannel, PlaywrightCheck } from "checkly/constructs";
+import { aiContextGroup } from "./ai-context.group.ts";
 
-new MultiStepCheck("checkly-skill-sync", {
+new PlaywrightCheck("checkly-skill-sync", {
   name: "Checkly skill sync",
   description:
     "Compares the Checkly skill included in checkly/checkly-plugin with the source skill in checkly/checkly-cli.",
-  code: {
-    entrypoint: "./checkly-skill-sync.spec.ts",
-  },
+  playwrightConfigPath: "../playwright.config.ts",
+  include: ["skills/checkly/**"],
   activated: true,
-  retryStrategy: RetryStrategyBuilder.singleRetry({
-    baseBackoffSeconds: 60,
-    sameRegion: true,
-  }),
   runParallel: false,
+  alertChannels: [AlertChannel.fromId(287691)],
+  group: aiContextGroup,
 });

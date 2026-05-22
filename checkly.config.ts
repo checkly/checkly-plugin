@@ -2,8 +2,8 @@ import { defineConfig } from "checkly";
 import { Frequency } from "checkly/constructs";
 
 export default defineConfig({
-  projectName: "Checkly Plugin Skills Monitoring",
-  logicalId: "checkly-plugin-skills-monitoring",
+  projectName: "Checkly Plugin and AI Context",
+  logicalId: "checkly-plugin-and-ai-context",
   repoUrl: "https://github.com/checkly/checkly-plugin",
   checks: {
     activated: true,
