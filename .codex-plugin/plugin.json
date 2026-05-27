@@ -19,6 +19,7 @@
     "browser-checks"
   ],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Checkly",
     "shortDescription": "Create and manage Checkly monitoring from Codex.",
