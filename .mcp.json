@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "checkly": {
+      "url": "https://api.checklyhq.com/mcp"
+    }
+  }
+}
