@@ -1,5 +1,7 @@
 node_modules/
 
-# Externally-authored skills synced from upstream repos.
-# Keep their formatting verbatim — see skills.config.ts.
-skills/checkly/
+# Skills are either synced verbatim from upstream repos (see skills.config.ts)
+# or authored as standalone docs — don't reformat either. Keeping the whole
+# tree out also stops a daily sync of new upstream files from tripping the
+# pre-commit format check.
+skills/

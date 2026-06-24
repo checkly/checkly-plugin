@@ -4,12 +4,12 @@
 
 Skills in this repo come in two flavours:
 
-1. **Externally-authored** — the skill is authored in another Checkly repo and synced here on release. Listed in [`skills.config.ts`](skills.config.ts). **Do not edit these files in this repo** — your changes will be overwritten the next time the sync runs. Open a PR against the source repo instead.
+1. **Externally-authored** — the skill is authored in another Checkly repo and mirrored here automatically. Listed in [`skills.config.ts`](skills.config.ts). **Do not edit these files in this repo** — the entire `skills/<name>/` directory is wiped and rewritten on every sync, so your changes will be overwritten. Open a PR against the source repo instead.
 2. **Plugin-native** — the skill is authored here directly. Anything under `skills/<name>/` that is _not_ listed in `skills.config.ts` falls into this bucket.
 
 For example, the `checkly` skill is externally-authored; it lives at [`checkly/checkly-cli`](https://github.com/checkly/checkly-cli/tree/main/skills/checkly).
 
-> Heads up: in `checkly-cli`, the `skills/` directory at the repo root is itself generated at prepare time from `packages/cli/dist/ai-context/public-skills/`. The package source is the ultimate source of truth, but the synced `skills/<name>/` artifact on a release tag is what we pull from — that's what end users see and it's stable per release.
+> Heads up: in `checkly-cli`, the `skills/` directory at the repo root is itself generated at prepare time from `packages/cli/dist/ai-context/public-skills/`. The package source is the ultimate source of truth, but the committed `skills/<name>/` directory is what we pull from — that's what end users see.
 
 ## Adding an externally-authored skill
 
@@ -22,10 +22,9 @@ For example, the `checkly` skill is externally-authored; it lives at [`checkly/c
        path: "<path/to/skill/dir>",
        ref: "<tag-branch-or-sha>",
      },
-     files: ["SKILL.md", "README.md"],
    }
    ```
-   `ref` is required — every source must be pinned explicitly. Prefer a release tag over a branch so syncs are reproducible.
+   The sync mirrors the **entire** `source.path` directory — every file under it, including nested directories like `references/`. There is no per-file list to maintain; files added or removed upstream flow through on the next sync. `ref` is required: point it at a branch (e.g. `main`) to track the latest, or a tag/SHA to pin a fixed version.
 2. Run `npm run sync` to pull the files locally.
 3. Commit `skills.config.ts` and `skills/<skill-name>/` together.
 
@@ -46,15 +45,17 @@ To add one:
 
 ## How syncing works
 
-`scripts/sync.ts` reads `skills.config.ts`, fetches each declared file from the ref pinned in `source.ref` via `raw.githubusercontent.com`, and writes it into `skills/<name>/`. There is no transform — what's upstream lands here verbatim.
+`scripts/sync.ts` reads `skills.config.ts` and, for each skill, lists every file under `source.path` at `source.ref` via the GitHub git-trees API, then fetches each file from `raw.githubusercontent.com`. It wipes and rewrites `skills/<name>/` so files removed upstream are removed here too. There is no transform — what's upstream lands here verbatim. If the git tree comes back truncated (a very large repo), the sync fails loudly rather than mirror an incomplete skill.
 
-To bump a synced skill, change its `source.ref` in `skills.config.ts` and run:
+Set `GITHUB_TOKEN` in the environment to authenticate the git-trees calls and avoid the low anonymous rate limit. CI passes the Actions token automatically; locally it is only needed if you hit the limit.
+
+To change the ref a synced skill tracks, edit its `source.ref` in `skills.config.ts` and run:
 
 ```bash
 npm run sync
 ```
 
-The sync also runs in CI via `.github/workflows/sync.yml`, on a daily schedule plus manual `workflow_dispatch`. The workflow runs `npm run sync` against whatever refs are pinned in `skills.config.ts` and commits any changes directly to `main`. CI does not bump the pins — that's a manual edit to `skills.config.ts`.
+The sync also runs in CI via `.github/workflows/sync.yml`, on a daily schedule plus manual `workflow_dispatch`. The workflow runs `npm run sync` against whatever refs are pinned in `skills.config.ts` and commits any changes directly to `main`. CI does not change the refs — that's a manual edit to `skills.config.ts`.
 
 ## Git hooks
 

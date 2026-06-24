@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -18,20 +18,27 @@ export type Skill = {
   /** Directory name under `skills/`. Must match the skill's frontmatter `name`. */
   name: string;
   source: Source;
-  /** Files to copy from `<source.repo>/<source.path>/` into `skills/<name>/`. */
-  files: [string, ...string[]];
 };
 
 export type Config = {
   skills: Skill[];
 };
 
-type FetchLike = (url: string) => Promise<{
+type FetchInit = { headers?: Record<string, string> };
+
+type FetchLike = (
+  url: string,
+  init?: FetchInit,
+) => Promise<{
   ok: boolean;
   status: number;
   statusText: string;
   text(): Promise<string>;
 }>;
+
+/** A single entry in a GitHub git-tree response. */
+type TreeEntry = { path: string; type: "blob" | "tree" | "commit" };
+type TreeResponse = { tree: TreeEntry[]; truncated: boolean };
 
 export type WrittenEntry = {
   skill: string;
@@ -62,21 +69,90 @@ export function buildRawUrl({
   return `https://raw.githubusercontent.com/${repo}/${ref}/${path}/${file}`;
 }
 
+function buildTreesUrl({ repo, ref }: { repo: string; ref: string }): string {
+  return `https://api.github.com/repos/${repo}/git/trees/${ref}?recursive=1`;
+}
+
+/**
+ * A skill name becomes a directory under `skills/` that gets wiped and
+ * rewritten. Reject anything that isn't a single path segment so a malformed
+ * config (empty, `.`, `..`, or a path separator) can't make `rm` reach outside
+ * `skills/`.
+ */
+function assertSafeSkillName(name: string): void {
+  if (name === "" || name === "." || name === ".." || /[/\\]/.test(name)) {
+    throw new Error(`Invalid skill name ${JSON.stringify(name)}: must be a single path segment.`);
+  }
+}
+
+/** Guards `writeFile` against a tree entry whose path escapes its skill dir. */
+function assertInsideSkillDir(skillDir: string, dest: string): void {
+  const resolvedDir = resolve(skillDir);
+  const resolvedDest = resolve(dest);
+  if (resolvedDest !== resolvedDir && !resolvedDest.startsWith(resolvedDir + sep)) {
+    throw new Error(`Refusing to write ${dest}: resolves outside the skill directory ${skillDir}.`);
+  }
+}
+
+/**
+ * Lists every file under `source.path`, relative to that path, by reading the
+ * repo's git tree. Mirroring the whole directory keeps us in lockstep with
+ * upstream: files added or removed there flow through without touching config.
+ */
+async function listSkillFiles(
+  source: Source,
+  fetchImpl: FetchLike,
+  token?: string,
+): Promise<string[]> {
+  const url = buildTreesUrl(source);
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetchImpl(url, { headers });
+  if (!res.ok) {
+    throw new Error(`Failed to list ${url}: ${res.status} ${res.statusText}`);
+  }
+
+  const body = JSON.parse(await res.text()) as TreeResponse;
+  // A truncated tree means GitHub capped the response and we'd silently miss
+  // files. Fail loudly rather than mirror an incomplete skill.
+  if (body.truncated) {
+    throw new Error(
+      `Tree for ${source.repo}@${source.ref} is truncated; cannot reliably mirror ${source.path}.`,
+    );
+  }
+
+  const prefix = `${source.path.replace(/\/+$/, "")}/`;
+  return body.tree
+    .filter((entry) => entry.type === "blob" && entry.path.startsWith(prefix))
+    .map((entry) => entry.path.slice(prefix.length));
+}
+
 export async function sync({
   config,
   root = REPO_ROOT,
   fetchImpl = fetch as unknown as FetchLike,
+  token = process.env.GITHUB_TOKEN,
 }: {
   config: Config;
   root?: string;
   fetchImpl?: FetchLike;
+  token?: string;
 }): Promise<WrittenEntry[]> {
   const written: WrittenEntry[] = [];
   for (const skill of config.skills) {
+    assertSafeSkillName(skill.name);
+    const files = await listSkillFiles(skill.source, fetchImpl, token);
+
     const skillDir = join(root, "skills", skill.name);
+    // Wipe-and-rewrite so files deleted upstream don't linger locally. The
+    // skill directory is fully owned by sync, so this is safe.
+    await rm(skillDir, { recursive: true, force: true });
     await mkdir(skillDir, { recursive: true });
 
-    for (const file of skill.files) {
+    for (const file of files) {
       const url = buildRawUrl({
         repo: skill.source.repo,
         ref: skill.source.ref,
@@ -89,6 +165,7 @@ export async function sync({
       }
       const body = await res.text();
       const dest = join(skillDir, file);
+      assertInsideSkillDir(skillDir, dest);
       await mkdir(dirname(dest), { recursive: true });
       await writeFile(dest, body);
       written.push({ skill: skill.name, file, url, dest });

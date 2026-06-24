@@ -48,9 +48,10 @@ Point Cursor at this repo to install the plugin.
 
 ## Skills shipped here
 
-| Skill                      | Source                                                                                                     |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [checkly](skills/checkly/) | [checkly/checkly-cli](https://github.com/checkly/checkly-cli/tree/main/skills/checkly) — synced on release |
+| Skill                                                                                | Source                                                                                                                              |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [checkly](skills/checkly/)                                                           | [checkly/checkly-cli](https://github.com/checkly/checkly-cli/tree/main/skills/checkly) — tracks `main`, synced daily                |
+| [playwright-best-practices-for-agents](skills/playwright-best-practices-for-agents/) | [checkly/docs](https://github.com/checkly/docs/tree/main/skills/playwright-best-practices-for-agents) — tracks `main`, synced daily |
 
 ## Adding more
 
