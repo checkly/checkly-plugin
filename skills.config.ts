@@ -9,7 +9,14 @@ export const config: Config = {
         path: "skills/checkly",
         ref: "main",
       },
-      files: ["SKILL.md", "README.md"],
+    },
+    {
+      name: "playwright-best-practices-for-agents",
+      source: {
+        repo: "checkly/docs",
+        path: "skills/playwright-best-practices-for-agents",
+        ref: "main",
+      },
     },
   ],
 };
