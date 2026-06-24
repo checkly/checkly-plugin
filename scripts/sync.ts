@@ -1,5 +1,5 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -74,6 +74,27 @@ function buildTreesUrl({ repo, ref }: { repo: string; ref: string }): string {
 }
 
 /**
+ * A skill name becomes a directory under `skills/` that gets wiped and
+ * rewritten. Reject anything that isn't a single path segment so a malformed
+ * config (empty, `.`, `..`, or a path separator) can't make `rm` reach outside
+ * `skills/`.
+ */
+function assertSafeSkillName(name: string): void {
+  if (name === "" || name === "." || name === ".." || /[/\\]/.test(name)) {
+    throw new Error(`Invalid skill name ${JSON.stringify(name)}: must be a single path segment.`);
+  }
+}
+
+/** Guards `writeFile` against a tree entry whose path escapes its skill dir. */
+function assertInsideSkillDir(skillDir: string, dest: string): void {
+  const resolvedDir = resolve(skillDir);
+  const resolvedDest = resolve(dest);
+  if (resolvedDest !== resolvedDir && !resolvedDest.startsWith(resolvedDir + sep)) {
+    throw new Error(`Refusing to write ${dest}: resolves outside the skill directory ${skillDir}.`);
+  }
+}
+
+/**
  * Lists every file under `source.path`, relative to that path, by reading the
  * repo's git tree. Mirroring the whole directory keeps us in lockstep with
  * upstream: files added or removed there flow through without touching config.
@@ -122,6 +143,7 @@ export async function sync({
 }): Promise<WrittenEntry[]> {
   const written: WrittenEntry[] = [];
   for (const skill of config.skills) {
+    assertSafeSkillName(skill.name);
     const files = await listSkillFiles(skill.source, fetchImpl, token);
 
     const skillDir = join(root, "skills", skill.name);
@@ -143,6 +165,7 @@ export async function sync({
       }
       const body = await res.text();
       const dest = join(skillDir, file);
+      assertInsideSkillDir(skillDir, dest);
       await mkdir(dirname(dest), { recursive: true });
       await writeFile(dest, body);
       written.push({ skill: skill.name, file, url, dest });

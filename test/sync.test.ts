@@ -205,4 +205,39 @@ describe("sync", () => {
       /Failed to fetch .* 404 Not Found/,
     );
   });
+
+  test("rejects a skill name that is not a single path segment", async () => {
+    for (const name of ["", ".", "..", "a/b", "a\\b"]) {
+      const config: Config = {
+        skills: [{ name, source: { repo: "acme/widgets", path: "skills/demo", ref: "main" } }],
+      };
+      const fetcher = fakeFetch({});
+      await assert.rejects(
+        sync({ config, root, fetchImpl: fetcher.impl }),
+        /Invalid skill name/,
+        `expected ${JSON.stringify(name)} to be rejected`,
+      );
+      // Validation must run before any network call, so nothing is fetched.
+      assert.equal(fetcher.calls.length, 0);
+    }
+  });
+
+  test("refuses to write a tree entry that escapes the skill directory", async () => {
+    const config: Config = {
+      skills: [
+        { name: "demo", source: { repo: "acme/widgets", path: "skills/demo", ref: "main" } },
+      ],
+    };
+    const fetcher = fakeFetch({
+      [treesUrl("acme/widgets", "main")]: tree([{ path: "skills/demo/../evil.md", type: "blob" }]),
+      "https://raw.githubusercontent.com/acme/widgets/main/skills/demo/../evil.md": "pwned",
+    });
+
+    await assert.rejects(
+      sync({ config, root, fetchImpl: fetcher.impl }),
+      /outside the skill directory/,
+    );
+    // The traversal target must not have been written.
+    await assert.rejects(readFile(join(root, "skills", "evil.md"), "utf8"));
+  });
 });
