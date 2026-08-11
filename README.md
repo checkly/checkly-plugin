@@ -1,6 +1,6 @@
 # checkly-plugin
 
-Checkly skills, agents, and commands for AI coding agents packaged as a single plugin that targets Codex, Claude Code, Cursor, and generic agent SDKs.
+Checkly skills for AI coding agents packaged as a single plugin that targets Codex, Claude Code, Cursor, and generic agent SDKs.
 
 ## What's in here
 

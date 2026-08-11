@@ -1,7 +1,7 @@
 {
   "name": "checkly",
   "version": "0.0.1",
-  "description": "Checkly skills, agents, and commands for AI coding agents.",
+  "description": "Checkly skills for creating, testing, and managing monitoring checks with AI coding agents.",
   "author": {
     "name": "Checkly",
     "url": "https://github.com/checkly"

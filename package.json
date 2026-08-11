@@ -2,7 +2,7 @@
   "name": "@checkly/checkly-plugin",
   "version": "0.0.1",
   "private": true,
-  "description": "Checkly skills, agents, and commands for AI coding agents.",
+  "description": "Checkly skills for creating, testing, and managing monitoring checks with AI coding agents.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

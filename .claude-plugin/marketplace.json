@@ -1,6 +1,6 @@
 {
   "name": "checkly",
-  "description": "Checkly plugin marketplace — skills, agents, and commands for monitoring with AI coding agents.",
+  "description": "Checkly plugin marketplace — skills for monitoring with AI coding agents.",
   "owner": {
     "name": "Checkly"
   },
@@ -8,7 +8,7 @@
     {
       "name": "checkly",
       "source": "./",
-      "description": "Checkly skills, agents, and commands for AI coding agents.",
+      "description": "Checkly skills for creating, testing, and managing monitoring checks with AI coding agents.",
       "author": {
         "name": "Checkly"
       },
