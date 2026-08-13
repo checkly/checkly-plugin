@@ -1,6 +1,6 @@
 {
   "name": "checkly",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Checkly skills for creating, testing, and managing monitoring checks with AI coding agents.",
   "author": {
     "name": "Checkly",
