@@ -1,15 +1,16 @@
 # checkly-plugin
 
-Checkly skills for AI coding agents packaged as a single plugin that targets Codex, Claude Code, Cursor, and generic agent SDKs.
+Checkly skills for AI coding agents packaged as a single plugin that targets Codex, Claude Code, Cursor, and generic agent SDKs. It also bundles the [Checkly MCP server](https://www.checklyhq.com/docs/ai/mcp-server/) for live account operations.
 
 ## What's in here
 
 ```
-.codex-plugin/      Codex plugin manifest
+.codex-plugin/       Codex plugin manifest
 .claude-plugin/      Claude Code marketplace + plugin manifest
 .cursor-plugin/      Cursor plugin manifest
 .plugin/             Generic agent plugin manifest
 skills/              Skills (one directory per skill)
+.mcp.json            Checkly MCP server configuration
 scripts/sync.ts      Pulls externally-authored skills from their source repos
 skills.config.ts     Declares where each externally-authored skill comes from
 ```
