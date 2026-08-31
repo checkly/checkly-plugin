@@ -1,7 +1,7 @@
 {
   "apps": {
-    "dev-6a7f1a35851c8191bdbe13198470e8c6": {
-      "id": "asdk_app_6a7f1a35851c8191bdbe13198470e8c6"
+    "checkly": {
+      "id": "asdk_app_6a7f1be5a9e48191b23a7b6ae73cf976"
     }
   }
 }
