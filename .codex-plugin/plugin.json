@@ -36,6 +36,8 @@
       "Add API monitoring for this endpoint.",
       "Investigate failing Checkly checks."
     ],
-    "brandColor": "#5C4EE5"
+    "brandColor": "#0075FF",
+    "composerIcon": "./assets/checkly-logo.svg",
+    "logo": "./assets/checkly-logo.svg"
   }
 }
