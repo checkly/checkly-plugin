@@ -2,7 +2,24 @@
   "mcpServers": {
     "checkly": {
       "type": "http",
-      "url": "https://api.checklyhq.com/mcp"
+      "url": "https://api.checklyhq.com/mcp",
+      "scopes": [
+        "checkly:account:read",
+        "checkly:account:invite",
+        "checkly:checks:read",
+        "checkly:checks:write",
+        "checkly:checks:run",
+        "checkly:incidents:read",
+        "checkly:incidents:write",
+        "checkly:environment-variables:read",
+        "checkly:environment-variables:write",
+        "checkly:status-pages:read",
+        "checkly:rca:read",
+        "checkly:rca:run",
+        "checkly:test-sessions:read",
+        "checkly:assets:read",
+        "checkly:usage:read"
+      ]
     }
   }
 }
