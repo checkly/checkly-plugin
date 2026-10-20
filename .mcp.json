@@ -12,7 +12,6 @@
         "checkly:incidents:read",
         "checkly:incidents:write",
         "checkly:environment-variables:read",
-        "checkly:environment-variables:write",
         "checkly:status-pages:read",
         "checkly:rca:read",
         "checkly:rca:run",
