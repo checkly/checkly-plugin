@@ -23,21 +23,22 @@
   "apps": "./.app.json",
   "interface": {
     "displayName": "Checkly",
-    "shortDescription": "Create and manage Checkly monitoring from Codex.",
-    "longDescription": "Use Checkly's agent skill to initialize monitoring-as-code projects, create API and browser checks, investigate failures, and manage account features with the Checkly CLI.",
+    "shortDescription": "Synthetic monitoring as code",
+    "longDescription": "Checkly is synthetic monitoring as code: API checks, browser checks, URL and uptime monitors, and Playwright Check Suites that run from global locations and alert you when something breaks.\n\nThis plugin bundles two skills and the Checkly MCP server. The skills teach Codex how to scaffold monitoring-as-code projects with the Checkly CLI, write API and browser checks, and apply Playwright best practices for stable end-to-end tests. The MCP server connects to your Checkly account so Codex can list and inspect checks, read check results and test sessions, trigger checks, run root cause analyses, and manage API checks, monitors, check groups, and status page incidents.\n\nIntended for developers and SREs who already use Checkly or want to add monitoring to a project without leaving their editor. A Checkly account is required; the MCP server authenticates with OAuth.\n\nLimitations: Playwright Check Suites and checks whose code lives in a repository are managed with the Checkly CLI, not through MCP tools. Environment variables can be read but not created or updated from this plugin.",
     "developerName": "Checkly",
     "category": "Developer Tools",
     "capabilities": ["Instructions", "Monitoring", "CLI workflows"],
     "websiteURL": "https://www.checklyhq.com",
-    "privacyPolicyURL": "https://www.checklyhq.com/privacy",
-    "termsOfServiceURL": "https://www.checklyhq.com/terms",
+    "supportURL": "https://www.checklyhq.com/support/",
+    "privacyPolicyURL": "https://www.checklyhq.com/privacy/",
+    "termsOfServiceURL": "https://www.checklyhq.com/terms/",
     "defaultPrompt": [
       "Create a Checkly browser check for this flow.",
       "Add API monitoring for this endpoint.",
       "Investigate failing Checkly checks."
     ],
     "brandColor": "#0075FF",
-    "composerIcon": "./assets/checkly-logo.svg",
-    "logo": "./assets/checkly-logo.svg"
+    "composerIcon": "./assets/checkly-logo.png",
+    "logo": "./assets/checkly-logo.png"
   }
 }

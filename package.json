@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "sync": "node scripts/sync.ts",
+    "package": "node scripts/package.ts",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",

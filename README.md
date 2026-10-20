@@ -12,6 +12,7 @@ Checkly skills for AI coding agents packaged as a single plugin that targets Cod
 skills/              Skills (one directory per skill)
 .mcp.json            Checkly MCP server configuration
 scripts/sync.ts      Pulls externally-authored skills from their source repos
+scripts/package.ts   Builds the ZIP for OpenAI plugin submission
 skills.config.ts     Declares where each externally-authored skill comes from
 ```
 
@@ -53,6 +54,14 @@ Point Cursor at this repo to install the plugin.
 | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [checkly](skills/checkly/)                                                           | [checkly/checkly-cli](https://github.com/checkly/checkly-cli/tree/main/skills/checkly) — tracks `main`, synced daily                |
 | [playwright-best-practices-for-agents](skills/playwright-best-practices-for-agents/) | [checkly/docs](https://github.com/checkly/docs/tree/main/skills/playwright-best-practices-for-agents) — tracks `main`, synced daily |
+
+## Packaging for OpenAI submission
+
+```
+npm run package
+```
+
+Writes `dist/checkly-plugin-<version>.zip` containing only the files the Codex plugin needs: the Codex manifest, `.mcp.json`, `.app.json`, `skills/`, `assets/`, `LICENSE`, and `README.md`. The file list comes from `git ls-files`, so untracked files such as `.env` never end up in the archive. Upload the ZIP at the [OpenAI plugin dashboard](https://developers.openai.com/plugins/deploy/submission).
 
 ## Adding more
 
