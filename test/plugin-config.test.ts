@@ -12,7 +12,6 @@ const EXPECTED_CHECKLY_SCOPES = [
   "checkly:incidents:read",
   "checkly:incidents:write",
   "checkly:environment-variables:read",
-  "checkly:environment-variables:write",
   "checkly:status-pages:read",
   "checkly:rca:read",
   "checkly:rca:run",
@@ -21,7 +20,7 @@ const EXPECTED_CHECKLY_SCOPES = [
   "checkly:usage:read",
 ];
 
-test("Checkly MCP requests every supported OAuth scope", async () => {
+test("Checkly MCP requests every supported OAuth scope except environment variable writes", async () => {
   const config = JSON.parse(await readFile(join(import.meta.dirname, "..", ".mcp.json"), "utf8"));
 
   assert.deepEqual(config.mcpServers.checkly.scopes, EXPECTED_CHECKLY_SCOPES);
