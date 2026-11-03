@@ -40,5 +40,64 @@
     "brandColor": "#0075FF",
     "composerIcon": "./assets/checkly-logo.png",
     "logo": "./assets/checkly-logo.png"
+  },
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Review the status of every check",
+              "prompt": "Which of my Checkly checks are failing right now?",
+              "tools_triggered": "show-check-status, show-check-list",
+              "expected_behavior": "List the checks in the connected Checkly account with their current status and call out the failing ones. Only checks the connected account can see are reported."
+            },
+            {
+              "description": "Inspect the latest result of a failing check",
+              "prompt": "Show me the latest result for my API check and explain what failed.",
+              "tools_triggered": "list-check-results, get-check-result",
+              "expected_behavior": "Fetch the most recent result for the named check and summarise the failure, including response status and timing, without inventing values that the result does not contain."
+            },
+            {
+              "description": "Create an API check from a description",
+              "prompt": "Add an API check for https://api.example.com/health that runs every 10 minutes from Frankfurt and fails on a non-200 response.",
+              "tools_triggered": "get-check-type-schema, create-check",
+              "expected_behavior": "Read the API check schema, create the check in the connected account with the requested interval, location and assertion, then report the created check and its ID."
+            },
+            {
+              "description": "Run a check on demand",
+              "prompt": "Run my homepage browser check now and tell me whether it passed.",
+              "tools_triggered": "trigger-checks, get-check-result",
+              "expected_behavior": "Trigger the named check, wait for the run to finish, and report pass or fail with the result of that run."
+            },
+            {
+              "description": "Investigate a recurring failure",
+              "prompt": "Investigate why my checkout check has been failing this morning.",
+              "tools_triggered": "get-error-group-root-cause-analyses, trigger-root-cause-analysis, get-root-cause-analysis",
+              "expected_behavior": "Look up an existing root cause analysis for the failing check or start one, then summarise the probable cause from the returned analysis without speculating beyond it."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Environment variable writes are not exposed",
+              "prompt": "Set the CHECKLY_API_KEY environment variable in my Checkly account to a new secret."
+            },
+            {
+              "description": "Playwright Check Suites are managed with the Checkly CLI",
+              "prompt": "Deploy the Playwright Check Suite in this repository to Checkly."
+            },
+            {
+              "description": "Billing and subscription changes are out of scope",
+              "prompt": "Upgrade my Checkly subscription to the Enterprise plan and update the payment method."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments. Checkly subscription and billing changes happen in the Checkly dashboard."
+      },
+      "publication": {
+        "release_notes": "Initial directory release. Bundles the Checkly CLI skill and the Playwright best-practices skill, plus the Checkly MCP server for inspecting checks, results, test sessions and root cause analyses, running checks on demand, and managing API checks, monitors, check groups and status page incidents."
+      }
+    }
   }
 }

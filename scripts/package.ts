@@ -73,9 +73,11 @@ export function toPortableManifest(manifest: Manifest): Manifest {
   for (const field of PORTABLE_FIELDS) {
     if (manifest[field] !== undefined) portable[field] = manifest[field];
   }
-  if (manifest.interface) {
-    portable.extensions = { "com.openai": { interface: manifest.interface } };
-  }
+  const openai = {
+    ...(manifest.extensions as Record<string, object> | undefined)?.["com.openai"],
+    ...(manifest.interface ? { interface: manifest.interface } : {}),
+  };
+  if (Object.keys(openai).length > 0) portable.extensions = { "com.openai": openai };
   return portable;
 }
 

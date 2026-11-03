@@ -96,6 +96,27 @@ describe("toPortableManifest", () => {
     });
   });
 
+  test("merges the manifest's own OpenAI extension with the interface", () => {
+    const portable = toPortableManifest({
+      name: "checkly",
+      interface: { displayName: "Checkly" },
+      extensions: {
+        "com.openai": {
+          review: { test_cases: { positive: [], negative: [] }, commerce: false },
+          publication: { release_notes: "Initial release." },
+        },
+      },
+    });
+
+    assert.deepEqual(portable.extensions, {
+      "com.openai": {
+        review: { test_cases: { positive: [], negative: [] }, commerce: false },
+        publication: { release_notes: "Initial release." },
+        interface: { displayName: "Checkly" },
+      },
+    });
+  });
+
   test("never carries an apps reference into the OpenAI extension", () => {
     const portable = toPortableManifest({ name: "x", apps: "./.app.json", interface: {} });
     const openai = (portable.extensions as Record<string, Record<string, unknown>>)["com.openai"];
@@ -194,6 +215,18 @@ describe("createPackage", () => {
     assert.equal(packaged.mcpServers, undefined);
     assert.equal(packaged.skills, undefined);
     assert.deepEqual(packaged.extensions["com.openai"].interface, source.interface);
+    // Review material lives in the ZIP: the portal shows it read-only.
+    const review = packaged.extensions["com.openai"].review;
+    assert.equal(review.test_cases.positive.length, 5);
+    assert.equal(review.test_cases.negative.length, 3);
+    for (const c of review.test_cases.positive) {
+      for (const field of ["description", "prompt", "tools_triggered", "expected_behavior"]) {
+        assert.ok(c[field], `positive case missing ${field}`);
+      }
+    }
+    for (const c of review.test_cases.negative) {
+      assert.ok(c.description && c.prompt);
+    }
     assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
   });
 
