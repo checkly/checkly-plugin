@@ -77,7 +77,7 @@ test('books API responds', async ({ request }) => {
     headers: { Authorization: `Bearer ${process.env.API_TOKEN!}` },
     data: { query: '{ books { id } }' },
   })
-  expect(res).toBeOK()
+  await expect(res).toBeOK()
   expect((await res.json()).data.books).toHaveLength(3)
 })
 ```
