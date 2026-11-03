@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs, promisify } from "node:util";
@@ -24,6 +25,16 @@ const PACKAGE_FILES = new Set([
 ]);
 const PACKAGE_DIRS = ["assets/", "skills/"];
 
+const MANIFEST = ".codex-plugin/plugin.json";
+
+/**
+ * The OpenAI plugin directory pins the manifest `name` to the ID of the
+ * existing listing and rejects re-uploads that don't match. The repo manifest
+ * keeps `checkly` because the Codex marketplace install from GitHub uses it,
+ * so the ID is only swapped in inside the submission ZIP.
+ */
+export const OPENAI_PLUGIN_NAME = "app-6a7f1be5a9e48191b23a7b6ae73cf976";
+
 export function selectPackageFiles(trackedFiles: string[]): string[] {
   return trackedFiles.filter(
     (file) => PACKAGE_FILES.has(file) || PACKAGE_DIRS.some((dir) => file.startsWith(dir)),
@@ -42,15 +53,33 @@ async function listTrackedFiles(root: string): Promise<string[]> {
 export async function createPackage({
   root,
   outFile,
+  pluginName,
 }: {
   root: string;
   outFile: string;
+  /** Replaces the manifest `name` inside the ZIP; the repo file is left alone. */
+  pluginName?: string;
 }): Promise<string[]> {
   const files = selectPackageFiles(await listTrackedFiles(root));
   await mkdir(dirname(outFile), { recursive: true });
   await rm(outFile, { force: true });
+  const fromRepo = pluginName ? files.filter((file) => file !== MANIFEST) : files;
   // -X drops extra file attributes so the archive is reproducible across machines.
-  await run("zip", ["-X", "-q", outFile, ...files], { cwd: root });
+  await run("zip", ["-X", "-q", outFile, ...fromRepo], { cwd: root });
+  if (pluginName) {
+    const manifest = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
+    const staging = await mkdtemp(join(tmpdir(), "checkly-plugin-manifest-"));
+    try {
+      await mkdir(join(staging, dirname(MANIFEST)));
+      await writeFile(
+        join(staging, MANIFEST),
+        `${JSON.stringify({ ...manifest, name: pluginName }, null, 2)}\n`,
+      );
+      await run("zip", ["-X", "-q", resolve(outFile), MANIFEST], { cwd: staging });
+    } finally {
+      await rm(staging, { recursive: true, force: true });
+    }
+  }
   return files;
 }
 
@@ -67,7 +96,7 @@ async function main() {
     REPO_ROOT,
     values.out ?? join("dist", `${manifest.name}-plugin-${manifest.version}.zip`),
   );
-  const files = await createPackage({ root: REPO_ROOT, outFile });
+  const files = await createPackage({ root: REPO_ROOT, outFile, pluginName: OPENAI_PLUGIN_NAME });
   for (const file of files) {
     console.log(`packaged ${file}`);
   }

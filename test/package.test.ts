@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
@@ -75,5 +75,23 @@ describe("createPackage", () => {
       !entries.some((e) => e === ".env" || e.startsWith("test/") || e.startsWith("node_modules/")),
     );
     assert.ok(!entries.includes("package.json"));
+  });
+
+  test("overrides the manifest name inside the ZIP without touching the repo file", async () => {
+    const outFile = join(dir, "plugin.zip");
+    const manifestPath = join(ROOT, ".codex-plugin", "plugin.json");
+    const sourceBefore = await readFile(manifestPath, "utf8");
+
+    const files = await createPackage({ root: ROOT, outFile, pluginName: "app-test-id" });
+
+    const { stdout: entriesOut } = await run("unzip", ["-Z1", outFile]);
+    assert.deepEqual(entriesOut.trim().split("\n").sort(), [...files].sort());
+
+    const { stdout } = await run("unzip", ["-p", outFile, ".codex-plugin/plugin.json"]);
+    const packaged = JSON.parse(stdout);
+    const source = JSON.parse(sourceBefore);
+    assert.equal(packaged.name, "app-test-id");
+    assert.deepEqual({ ...packaged, name: source.name }, source);
+    assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
   });
 });
