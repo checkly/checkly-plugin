@@ -61,7 +61,15 @@ Point Cursor at this repo to install the plugin.
 npm run package
 ```
 
-Writes `dist/checkly-plugin-<version>.zip` containing only the files the Codex plugin needs: the Codex manifest, `.mcp.json`, `skills/`, `assets/`, `LICENSE`, and `README.md`. The file list comes from `git ls-files`, so untracked files such as `.env` never end up in the archive. The manifest `name` ships as the repo declares it, `checkly`: the portal reports `can_edit_package_name: true` and assigns its own `plugins_…` identifier, so the package name is ours to choose. `.mcp.json` is rewritten the same way, but only by addition: the ZIP copies the OAuth scopes into `extensions["com.openai"].auth.baseScopes`, which is where OpenAI reads them, pins `defaultScopes` to an empty array so the portal can't fall back to every scope the server advertises, declares `client.mode: "cimd"` as the registration method, and leaves the transport, URL and `scopes` untouched. The portal pins the MCP servers of an existing plugin, so changing any of them is rejected as replacing the server. `.app.json` and the manifest `apps` field are left out of the ZIP, because OpenAI rejects submissions with app references; the MCP app is linked in the dashboard instead. Upload the ZIP at the [OpenAI plugin dashboard](https://developers.openai.com/plugins/deploy/submission).
+Writes `dist/checkly-plugin-<version>.zip` as an Agent Plugins portable package: a root `plugin.json` and `mcp.json` generated from the repo's compatibility manifests, plus `skills/`, `assets/`, `LICENSE`, and `README.md`. The verbatim file list comes from `git ls-files`, so untracked files such as `.env` never end up in the archive.
+
+Both manifests are generated rather than copied, and the repo files are left alone so Claude Code, Cursor and Codex marketplace installs keep working:
+
+- `plugin.json` keeps the portable identity fields at the root and moves `interface` under `extensions["com.openai"]`, which replaces the `.codex-plugin/plugin.json` overlay entirely. `skills` and `mcpServers` are dropped, because portable packages discover `skills/` and `mcp.json` by path.
+- `mcp.json` renames the transport from Claude Code's `http` to the portable `streamable-http`, moves the OAuth scopes into `extensions["com.openai"].auth.baseScopes`, pins `defaultScopes` to `[]` so the portal can't fall back to every scope the server advertises, and declares `client.mode: "cimd"` as the registration method.
+- `.app.json` and the manifest `apps` field stay out: a directory submission can't reference a registered MCP app.
+
+Upload the ZIP at the [OpenAI plugin dashboard](https://developers.openai.com/plugins/deploy/submission).
 
 ## Adding more
 

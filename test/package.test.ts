@@ -6,13 +6,18 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
-import { createPackage, selectPackageFiles, toSubmissionMcpConfig } from "../scripts/package.ts";
+import {
+  createPackage,
+  selectPackageFiles,
+  toPortableManifest,
+  toPortableMcpConfig,
+} from "../scripts/package.ts";
 
 const run = promisify(execFile);
 const ROOT = join(import.meta.dirname, "..");
 
 describe("selectPackageFiles", () => {
-  test("keeps only what the Codex plugin needs at runtime", () => {
+  test("keeps only the files that ship verbatim", () => {
     const tracked = [
       ".codex-plugin/plugin.json",
       ".mcp.json",
@@ -38,8 +43,6 @@ describe("selectPackageFiles", () => {
     ];
 
     assert.deepEqual(selectPackageFiles(tracked), [
-      ".codex-plugin/plugin.json",
-      ".mcp.json",
       "LICENSE",
       "README.md",
       "assets/checkly-logo.png",
@@ -48,69 +51,61 @@ describe("selectPackageFiles", () => {
     ]);
   });
 
-  test("leaves out .app.json because OpenAI rejects ZIPs with app references", () => {
-    assert.ok(!selectPackageFiles([".app.json", ".mcp.json"]).includes(".app.json"));
+  test("leaves out .app.json because directory submissions can't reference registered apps", () => {
+    assert.ok(!selectPackageFiles([".app.json", "LICENSE"]).includes(".app.json"));
+  });
+
+  test("leaves out the compatibility manifests, which are rewritten as portable ones", () => {
+    const selected = selectPackageFiles([".codex-plugin/plugin.json", ".mcp.json", "LICENSE"]);
+    assert.deepEqual(selected, ["LICENSE"]);
   });
 });
 
-describe("createPackage", () => {
-  let dir: string;
-  beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), "checkly-plugin-package-"));
+describe("toPortableManifest", () => {
+  test("moves the OpenAI interface under extensions and drops compatibility fields", () => {
+    const source = {
+      name: "checkly",
+      version: "1.0.0",
+      description: "Checkly skills",
+      author: { name: "Checkly" },
+      homepage: "https://www.checklyhq.com",
+      repository: "https://github.com/checkly/checkly-plugin",
+      license: "Apache-2.0",
+      keywords: ["checkly"],
+      skills: "./skills/",
+      mcpServers: "./.mcp.json",
+      apps: "./.app.json",
+      interface: { displayName: "Checkly", logo: "./assets/checkly-logo.png" },
+    };
+
+    assert.deepEqual(toPortableManifest(source), {
+      $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+      name: "checkly",
+      version: "1.0.0",
+      description: "Checkly skills",
+      author: { name: "Checkly" },
+      homepage: "https://www.checklyhq.com",
+      repository: "https://github.com/checkly/checkly-plugin",
+      license: "Apache-2.0",
+      keywords: ["checkly"],
+      extensions: {
+        "com.openai": {
+          interface: { displayName: "Checkly", logo: "./assets/checkly-logo.png" },
+        },
+      },
+    });
   });
-  afterEach(async () => {
-    await rm(dir, { recursive: true, force: true });
-  });
 
-  test("zips the tracked plugin files from the repo root", async () => {
-    const outFile = join(dir, "plugin.zip");
-    const files = await createPackage({ root: ROOT, outFile });
-
-    const { stdout } = await run("unzip", ["-Z1", outFile]);
-    const entries = stdout.trim().split("\n").sort();
-
-    assert.deepEqual(entries, [...files].sort());
-    assert.ok(entries.includes(".codex-plugin/plugin.json"));
-    assert.ok(entries.includes(".mcp.json"));
-    assert.ok(entries.includes("assets/checkly-logo.png"));
-    assert.ok(entries.includes("skills/checkly/SKILL.md"));
-    assert.ok(
-      !entries.some((e) => e === ".env" || e.startsWith("test/") || e.startsWith("node_modules/")),
-    );
-    assert.ok(!entries.includes("package.json"));
-  });
-
-  test("drops the apps reference from the manifest inside the ZIP", async () => {
-    const outFile = join(dir, "plugin.zip");
-    await createPackage({ root: ROOT, outFile });
-
-    const { stdout } = await run("unzip", ["-p", outFile, ".codex-plugin/plugin.json"]);
-    assert.equal(JSON.parse(stdout).apps, undefined);
-    assert.equal(JSON.parse(stdout).mcpServers, "./.mcp.json");
-  });
-
-  test("overrides the manifest name inside the ZIP without touching the repo file", async () => {
-    const outFile = join(dir, "plugin.zip");
-    const manifestPath = join(ROOT, ".codex-plugin", "plugin.json");
-    const sourceBefore = await readFile(manifestPath, "utf8");
-
-    const files = await createPackage({ root: ROOT, outFile, pluginName: "app-test-id" });
-
-    const { stdout: entriesOut } = await run("unzip", ["-Z1", outFile]);
-    assert.deepEqual(entriesOut.trim().split("\n").sort(), [...files].sort());
-
-    const { stdout } = await run("unzip", ["-p", outFile, ".codex-plugin/plugin.json"]);
-    const packaged = JSON.parse(stdout);
-    const source = JSON.parse(sourceBefore);
-    assert.equal(packaged.name, "app-test-id");
-    const { apps: _apps, ...sourceWithoutApps } = source;
-    assert.deepEqual({ ...packaged, name: source.name }, sourceWithoutApps);
-    assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
+  test("never carries an apps reference into the OpenAI extension", () => {
+    const portable = toPortableManifest({ name: "x", apps: "./.app.json", interface: {} });
+    const openai = (portable.extensions as Record<string, Record<string, unknown>>)["com.openai"];
+    assert.equal(portable.apps, undefined);
+    assert.equal(openai.apps, undefined);
   });
 });
 
-describe("toSubmissionMcpConfig", () => {
-  test("adds the OpenAI OAuth extension without altering the server declaration", () => {
+describe("toPortableMcpConfig", () => {
+  test("declares the portable transport, schema and OpenAI OAuth extension", () => {
     const source = {
       mcpServers: {
         checkly: {
@@ -121,12 +116,12 @@ describe("toSubmissionMcpConfig", () => {
       },
     };
 
-    assert.deepEqual(toSubmissionMcpConfig(source), {
+    assert.deepEqual(toPortableMcpConfig(source), {
+      $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
       mcpServers: {
         checkly: {
-          type: "http",
+          type: "streamable-http",
           url: "https://api.checklyhq.com/mcp",
-          scopes: ["checkly:checks:read", "checkly:checks:run"],
           extensions: {
             "com.openai": {
               auth: {
@@ -142,44 +137,83 @@ describe("toSubmissionMcpConfig", () => {
     });
   });
 
-  test("leaves a server without scopes without an auth declaration", () => {
-    const config = toSubmissionMcpConfig({
-      mcpServers: { open: { type: "http", url: "https://example.com/mcp" } },
+  test("keeps a transport that is already portable", () => {
+    const config = toPortableMcpConfig({
+      mcpServers: { legacy: { type: "sse", url: "https://example.com/mcp" } },
     });
 
-    assert.deepEqual(config.mcpServers.open, {
-      type: "http",
-      url: "https://example.com/mcp",
-    });
+    assert.deepEqual(config.mcpServers.legacy, { type: "sse", url: "https://example.com/mcp" });
   });
 });
 
-describe("createPackage mcp config", () => {
+describe("createPackage", () => {
   let dir: string;
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), "checkly-plugin-mcp-"));
+    dir = await mkdtemp(join(tmpdir(), "checkly-plugin-package-"));
   });
   afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  test("rewrites .mcp.json inside the ZIP without touching the repo file", async () => {
+  test("zips the portable manifests alongside the verbatim files", async () => {
+    const outFile = join(dir, "plugin.zip");
+    const files = await createPackage({ root: ROOT, outFile });
+
+    const { stdout } = await run("unzip", ["-Z1", outFile]);
+    const entries = stdout.trim().split("\n").sort();
+
+    assert.deepEqual(entries, [...files].sort());
+    assert.ok(entries.includes("plugin.json"));
+    assert.ok(entries.includes("mcp.json"));
+    assert.ok(entries.includes("assets/checkly-logo.png"));
+    assert.ok(entries.includes("skills/checkly/SKILL.md"));
+    assert.ok(
+      !entries.some((e) => e === ".env" || e.startsWith("test/") || e.startsWith("node_modules/")),
+    );
+    assert.ok(!entries.includes("package.json"));
+    // The compatibility layout is replaced, not shipped beside the portable one.
+    assert.ok(!entries.includes(".codex-plugin/plugin.json"));
+    assert.ok(!entries.includes(".mcp.json"));
+    assert.ok(!entries.includes(".app.json"));
+  });
+
+  test("writes a portable plugin.json without touching the repo manifest", async () => {
+    const outFile = join(dir, "plugin.zip");
+    const manifestPath = join(ROOT, ".codex-plugin", "plugin.json");
+    const sourceBefore = await readFile(manifestPath, "utf8");
+
+    await createPackage({ root: ROOT, outFile });
+
+    const { stdout } = await run("unzip", ["-p", outFile, "plugin.json"]);
+    const packaged = JSON.parse(stdout);
+    const source = JSON.parse(sourceBefore);
+
+    assert.equal(packaged.$schema, "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json");
+    assert.equal(packaged.name, source.name);
+    assert.equal(packaged.apps, undefined);
+    assert.equal(packaged.mcpServers, undefined);
+    assert.equal(packaged.skills, undefined);
+    assert.deepEqual(packaged.extensions["com.openai"].interface, source.interface);
+    assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
+  });
+
+  test("writes a portable mcp.json without touching the repo file", async () => {
     const outFile = join(dir, "plugin.zip");
     const mcpPath = join(ROOT, ".mcp.json");
     const sourceBefore = await readFile(mcpPath, "utf8");
 
     await createPackage({ root: ROOT, outFile });
 
-    const { stdout } = await run("unzip", ["-p", outFile, ".mcp.json"]);
+    const { stdout } = await run("unzip", ["-p", outFile, "mcp.json"]);
     const packaged = JSON.parse(stdout);
     const server = packaged.mcpServers.checkly;
-
-    assert.deepEqual(Object.keys(packaged), ["mcpServers"]);
-    // The server declaration itself must survive untouched: the portal treats a
-    // changed transport or URL as replacing the server and rejects the upload.
-    const { extensions: _extensions, ...declaration } = server;
-    assert.deepEqual(declaration, JSON.parse(sourceBefore).mcpServers.checkly);
     const auth = server.extensions["com.openai"].auth;
+
+    assert.equal(packaged.$schema, "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json");
+    assert.equal(server.type, "streamable-http");
+    assert.equal(server.url, JSON.parse(sourceBefore).mcpServers.checkly.url);
+    // `scopes` is a Claude Code / Codex field; the portable schema has no such key.
+    assert.equal(server.scopes, undefined);
     assert.equal(auth.type, "oauth");
     assert.deepEqual(auth.client, { mode: "cimd" });
     assert.deepEqual(auth.baseScopes, JSON.parse(sourceBefore).mcpServers.checkly.scopes);
