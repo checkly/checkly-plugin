@@ -15,14 +15,11 @@ const run = promisify(execFile);
  * OpenAI requires the ZIP to contain a single plugin root with no secrets, so
  * the list is built from `git ls-files` and filtered here: untracked files
  * such as `.env` or `node_modules/` can never slip in.
+ *
+ * `.app.json` stays out: OpenAI rejects ZIPs with app references and links the
+ * MCP app in the dashboard instead. The repo keeps it for local Codex installs.
  */
-const PACKAGE_FILES = new Set([
-  ".codex-plugin/plugin.json",
-  ".mcp.json",
-  ".app.json",
-  "LICENSE",
-  "README.md",
-]);
+const PACKAGE_FILES = new Set([".codex-plugin/plugin.json", ".mcp.json", "LICENSE", "README.md"]);
 const PACKAGE_DIRS = ["assets/", "skills/"];
 
 const MANIFEST = ".codex-plugin/plugin.json";
@@ -63,22 +60,21 @@ export async function createPackage({
   const files = selectPackageFiles(await listTrackedFiles(root));
   await mkdir(dirname(outFile), { recursive: true });
   await rm(outFile, { force: true });
-  const fromRepo = pluginName ? files.filter((file) => file !== MANIFEST) : files;
+  const fromRepo = files.filter((file) => file !== MANIFEST);
   // -X drops extra file attributes so the archive is reproducible across machines.
   await run("zip", ["-X", "-q", outFile, ...fromRepo], { cwd: root });
-  if (pluginName) {
-    const manifest = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
-    const staging = await mkdtemp(join(tmpdir(), "checkly-plugin-manifest-"));
-    try {
-      await mkdir(join(staging, dirname(MANIFEST)));
-      await writeFile(
-        join(staging, MANIFEST),
-        `${JSON.stringify({ ...manifest, name: pluginName }, null, 2)}\n`,
-      );
-      await run("zip", ["-X", "-q", resolve(outFile), MANIFEST], { cwd: staging });
-    } finally {
-      await rm(staging, { recursive: true, force: true });
-    }
+  // The manifest is always rewritten: `apps` points at `.app.json`, which isn't shipped.
+  const { apps: _apps, ...manifest } = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
+  const staging = await mkdtemp(join(tmpdir(), "checkly-plugin-manifest-"));
+  try {
+    await mkdir(join(staging, dirname(MANIFEST)));
+    await writeFile(
+      join(staging, MANIFEST),
+      `${JSON.stringify({ ...manifest, name: pluginName ?? manifest.name }, null, 2)}\n`,
+    );
+    await run("zip", ["-X", "-q", resolve(outFile), MANIFEST], { cwd: staging });
+  } finally {
+    await rm(staging, { recursive: true, force: true });
   }
   return files;
 }

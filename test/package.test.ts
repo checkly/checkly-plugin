@@ -40,13 +40,16 @@ describe("selectPackageFiles", () => {
     assert.deepEqual(selectPackageFiles(tracked), [
       ".codex-plugin/plugin.json",
       ".mcp.json",
-      ".app.json",
       "LICENSE",
       "README.md",
       "assets/checkly-logo.png",
       "skills/checkly/SKILL.md",
       "skills/playwright-best-practices-for-agents/references/auth.md",
     ]);
+  });
+
+  test("leaves out .app.json because OpenAI rejects ZIPs with app references", () => {
+    assert.ok(!selectPackageFiles([".app.json", ".mcp.json"]).includes(".app.json"));
   });
 });
 
@@ -77,6 +80,15 @@ describe("createPackage", () => {
     assert.ok(!entries.includes("package.json"));
   });
 
+  test("drops the apps reference from the manifest inside the ZIP", async () => {
+    const outFile = join(dir, "plugin.zip");
+    await createPackage({ root: ROOT, outFile });
+
+    const { stdout } = await run("unzip", ["-p", outFile, ".codex-plugin/plugin.json"]);
+    assert.equal(JSON.parse(stdout).apps, undefined);
+    assert.equal(JSON.parse(stdout).mcpServers, "./.mcp.json");
+  });
+
   test("overrides the manifest name inside the ZIP without touching the repo file", async () => {
     const outFile = join(dir, "plugin.zip");
     const manifestPath = join(ROOT, ".codex-plugin", "plugin.json");
@@ -91,7 +103,8 @@ describe("createPackage", () => {
     const packaged = JSON.parse(stdout);
     const source = JSON.parse(sourceBefore);
     assert.equal(packaged.name, "app-test-id");
-    assert.deepEqual({ ...packaged, name: source.name }, source);
+    const { apps: _apps, ...sourceWithoutApps } = source;
+    assert.deepEqual({ ...packaged, name: source.name }, sourceWithoutApps);
     assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
   });
 });
