@@ -131,7 +131,9 @@ describe("toSubmissionMcpConfig", () => {
             "com.openai": {
               auth: {
                 type: "oauth",
+                client: { mode: "cimd" },
                 baseScopes: ["checkly:checks:read", "checkly:checks:run"],
+                defaultScopes: [],
               },
             },
           },
@@ -177,11 +179,13 @@ describe("createPackage mcp config", () => {
     // changed transport or URL as replacing the server and rejects the upload.
     const { extensions: _extensions, ...declaration } = server;
     assert.deepEqual(declaration, JSON.parse(sourceBefore).mcpServers.checkly);
-    assert.equal(server.extensions["com.openai"].auth.type, "oauth");
-    assert.deepEqual(
-      server.extensions["com.openai"].auth.baseScopes,
-      JSON.parse(sourceBefore).mcpServers.checkly.scopes,
-    );
+    const auth = server.extensions["com.openai"].auth;
+    assert.equal(auth.type, "oauth");
+    assert.deepEqual(auth.client, { mode: "cimd" });
+    assert.deepEqual(auth.baseScopes, JSON.parse(sourceBefore).mcpServers.checkly.scopes);
+    // Without this the portal falls back to every scope the server advertises,
+    // which would grant checkly:environment-variables:write again.
+    assert.deepEqual(auth.defaultScopes, []);
     assert.equal(await readFile(mcpPath, "utf8"), sourceBefore);
   });
 });

@@ -44,9 +44,16 @@ type McpConfig = { mcpServers: Record<string, McpServer>; [key: string]: unknown
  * The transport, URL and `scopes` therefore stay exactly as the repo declares
  * them, which is also what Claude Code and Codex read on a marketplace install.
  *
- * No `client` mode is declared: `auth.checklyhq.com` advertises no registration
+ * `client.mode` is `cimd`: `auth.checklyhq.com` advertises no registration
  * endpoint, so Dynamic Client Registration is unavailable, and a `provided`
- * client would need a client ID registered for OpenAI's callback URL.
+ * client would need a client ID we don't have. A Client Identifier Metadata
+ * Document works - a connector created with it completed OAuth against the
+ * tenant - and needs no client registration at all.
+ *
+ * `defaultScopes` is empty so only `baseScopes` is requested. ChatGPT otherwise
+ * falls back to every scope the server advertises, which would grant
+ * `checkly:environment-variables:write` and bring back the two environment
+ * variable tools that OpenAI's review flagged as soliciting secrets.
  *
  * No `$schema` either: the portal validates this file against a closed model
  * and rejects the upload with "`$schema` is invalid: Extra inputs are not
@@ -59,7 +66,16 @@ export function toSubmissionMcpConfig(config: McpConfig): McpConfig {
       server.scopes?.length
         ? {
             ...server,
-            extensions: { "com.openai": { auth: { type: "oauth", baseScopes: server.scopes } } },
+            extensions: {
+              "com.openai": {
+                auth: {
+                  type: "oauth",
+                  client: { mode: "cimd" },
+                  baseScopes: server.scopes,
+                  defaultScopes: [],
+                },
+              },
+            },
           }
         : server,
     ]),
