@@ -23,6 +23,49 @@ const PACKAGE_FILES = new Set([".codex-plugin/plugin.json", ".mcp.json", "LICENS
 const PACKAGE_DIRS = ["assets/", "skills/"];
 
 const MANIFEST = ".codex-plugin/plugin.json";
+const MCP_CONFIG = ".mcp.json";
+
+/** Both files are rewritten in a staging dir instead of copied from the repo. */
+const REWRITTEN = [MANIFEST, MCP_CONFIG];
+
+type McpServer = { type?: string; scopes?: string[]; [key: string]: unknown };
+type McpConfig = { mcpServers: Record<string, McpServer>; [key: string]: unknown };
+
+/**
+ * Add the OAuth declaration the OpenAI plugin directory reads to each server in
+ * the repo's `.mcp.json`. OpenAI takes its settings from
+ * `extensions["com.openai"].auth`, which the repo file never declares, so the
+ * submission portal has no auth configuration to open a connection with.
+ *
+ * The rewrite is strictly additive. The portal pins the MCP servers of an
+ * existing plugin and rejects an upload that changes one: swapping `type` for
+ * the Agent Plugins transport name `streamable-http` fails with "Adding,
+ * removing, or replacing an MCP server isn't supported for existing plugins."
+ * The transport, URL and `scopes` therefore stay exactly as the repo declares
+ * them, which is also what Claude Code and Codex read on a marketplace install.
+ *
+ * No `client` mode is declared: `auth.checklyhq.com` advertises no registration
+ * endpoint, so Dynamic Client Registration is unavailable, and a `provided`
+ * client would need a client ID registered for OpenAI's callback URL.
+ *
+ * No `$schema` either: the portal validates this file against a closed model
+ * and rejects the upload with "`$schema` is invalid: Extra inputs are not
+ * permitted."
+ */
+export function toSubmissionMcpConfig(config: McpConfig): McpConfig {
+  const mcpServers = Object.fromEntries(
+    Object.entries(config.mcpServers).map(([name, server]) => [
+      name,
+      server.scopes?.length
+        ? {
+            ...server,
+            extensions: { "com.openai": { auth: { type: "oauth", baseScopes: server.scopes } } },
+          }
+        : server,
+    ]),
+  );
+  return { ...config, mcpServers };
+}
 
 /**
  * The OpenAI plugin directory pins the manifest `name` to the ID of the
@@ -60,19 +103,23 @@ export async function createPackage({
   const files = selectPackageFiles(await listTrackedFiles(root));
   await mkdir(dirname(outFile), { recursive: true });
   await rm(outFile, { force: true });
-  const fromRepo = files.filter((file) => file !== MANIFEST);
+  const fromRepo = files.filter((file) => !REWRITTEN.includes(file));
   // -X drops extra file attributes so the archive is reproducible across machines.
   await run("zip", ["-X", "-q", outFile, ...fromRepo], { cwd: root });
   // The manifest is always rewritten: `apps` points at `.app.json`, which isn't shipped.
   const { apps: _apps, ...manifest } = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
+  const mcpConfig = toSubmissionMcpConfig(
+    JSON.parse(await readFile(join(root, MCP_CONFIG), "utf8")),
+  );
   const staging = await mkdtemp(join(tmpdir(), "checkly-plugin-manifest-"));
   try {
-    await mkdir(join(staging, dirname(MANIFEST)));
+    await mkdir(join(staging, dirname(MANIFEST)), { recursive: true });
     await writeFile(
       join(staging, MANIFEST),
       `${JSON.stringify({ ...manifest, name: pluginName ?? manifest.name }, null, 2)}\n`,
     );
-    await run("zip", ["-X", "-q", resolve(outFile), MANIFEST], { cwd: staging });
+    await writeFile(join(staging, MCP_CONFIG), `${JSON.stringify(mcpConfig, null, 2)}\n`);
+    await run("zip", ["-X", "-q", resolve(outFile), ...REWRITTEN], { cwd: staging });
   } finally {
     await rm(staging, { recursive: true, force: true });
   }

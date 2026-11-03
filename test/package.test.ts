@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
-import { createPackage, selectPackageFiles } from "../scripts/package.ts";
+import { createPackage, selectPackageFiles, toSubmissionMcpConfig } from "../scripts/package.ts";
 
 const run = promisify(execFile);
 const ROOT = join(import.meta.dirname, "..");
@@ -106,5 +106,82 @@ describe("createPackage", () => {
     const { apps: _apps, ...sourceWithoutApps } = source;
     assert.deepEqual({ ...packaged, name: source.name }, sourceWithoutApps);
     assert.equal(await readFile(manifestPath, "utf8"), sourceBefore);
+  });
+});
+
+describe("toSubmissionMcpConfig", () => {
+  test("adds the OpenAI OAuth extension without altering the server declaration", () => {
+    const source = {
+      mcpServers: {
+        checkly: {
+          type: "http",
+          url: "https://api.checklyhq.com/mcp",
+          scopes: ["checkly:checks:read", "checkly:checks:run"],
+        },
+      },
+    };
+
+    assert.deepEqual(toSubmissionMcpConfig(source), {
+      mcpServers: {
+        checkly: {
+          type: "http",
+          url: "https://api.checklyhq.com/mcp",
+          scopes: ["checkly:checks:read", "checkly:checks:run"],
+          extensions: {
+            "com.openai": {
+              auth: {
+                type: "oauth",
+                baseScopes: ["checkly:checks:read", "checkly:checks:run"],
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("leaves a server without scopes without an auth declaration", () => {
+    const config = toSubmissionMcpConfig({
+      mcpServers: { open: { type: "http", url: "https://example.com/mcp" } },
+    });
+
+    assert.deepEqual(config.mcpServers.open, {
+      type: "http",
+      url: "https://example.com/mcp",
+    });
+  });
+});
+
+describe("createPackage mcp config", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), "checkly-plugin-mcp-"));
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("rewrites .mcp.json inside the ZIP without touching the repo file", async () => {
+    const outFile = join(dir, "plugin.zip");
+    const mcpPath = join(ROOT, ".mcp.json");
+    const sourceBefore = await readFile(mcpPath, "utf8");
+
+    await createPackage({ root: ROOT, outFile });
+
+    const { stdout } = await run("unzip", ["-p", outFile, ".mcp.json"]);
+    const packaged = JSON.parse(stdout);
+    const server = packaged.mcpServers.checkly;
+
+    assert.deepEqual(Object.keys(packaged), ["mcpServers"]);
+    // The server declaration itself must survive untouched: the portal treats a
+    // changed transport or URL as replacing the server and rejects the upload.
+    const { extensions: _extensions, ...declaration } = server;
+    assert.deepEqual(declaration, JSON.parse(sourceBefore).mcpServers.checkly);
+    assert.equal(server.extensions["com.openai"].auth.type, "oauth");
+    assert.deepEqual(
+      server.extensions["com.openai"].auth.baseScopes,
+      JSON.parse(sourceBefore).mcpServers.checkly.scopes,
+    );
+    assert.equal(await readFile(mcpPath, "utf8"), sourceBefore);
   });
 });
