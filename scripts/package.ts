@@ -83,14 +83,6 @@ export function toSubmissionMcpConfig(config: McpConfig): McpConfig {
   return { ...config, mcpServers };
 }
 
-/**
- * The OpenAI plugin directory pins the manifest `name` to the ID of the
- * existing listing and rejects re-uploads that don't match. The repo manifest
- * keeps `checkly` because the Codex marketplace install from GitHub uses it,
- * so the ID is only swapped in inside the submission ZIP.
- */
-export const OPENAI_PLUGIN_NAME = "app-6a7f1be5a9e48191b23a7b6ae73cf976";
-
 export function selectPackageFiles(trackedFiles: string[]): string[] {
   return trackedFiles.filter(
     (file) => PACKAGE_FILES.has(file) || PACKAGE_DIRS.some((dir) => file.startsWith(dir)),
@@ -155,7 +147,7 @@ async function main() {
     REPO_ROOT,
     values.out ?? join("dist", `${manifest.name}-plugin-${manifest.version}.zip`),
   );
-  const files = await createPackage({ root: REPO_ROOT, outFile, pluginName: OPENAI_PLUGIN_NAME });
+  const files = await createPackage({ root: REPO_ROOT, outFile });
   for (const file of files) {
     console.log(`packaged ${file}`);
   }
