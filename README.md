@@ -61,7 +61,7 @@ Point Cursor at this repo to install the plugin.
 npm run package
 ```
 
-Writes `dist/checkly-plugin-<version>.zip` containing only the files the Codex plugin needs: the Codex manifest, `.mcp.json`, `.app.json`, `skills/`, `assets/`, `LICENSE`, and `README.md`. The file list comes from `git ls-files`, so untracked files such as `.env` never end up in the archive. The manifest `name` inside the ZIP is replaced with the ID of the existing OpenAI listing (`OPENAI_PLUGIN_NAME` in `scripts/package.ts`), because the directory rejects uploads whose name doesn't match. The repo manifest keeps `checkly` for marketplace installs. Upload the ZIP at the [OpenAI plugin dashboard](https://developers.openai.com/plugins/deploy/submission).
+Writes `dist/checkly-plugin-<version>.zip` containing only the files the Codex plugin needs: the Codex manifest, `.mcp.json`, `skills/`, `assets/`, `LICENSE`, and `README.md`. The file list comes from `git ls-files`, so untracked files such as `.env` never end up in the archive. The manifest `name` inside the ZIP is replaced with the ID of the existing OpenAI listing (`OPENAI_PLUGIN_NAME` in `scripts/package.ts`), because the directory rejects uploads whose name doesn't match. The repo manifest keeps `checkly` for marketplace installs. `.app.json` and the manifest `apps` field are left out of the ZIP, because OpenAI rejects submissions with app references; the MCP app is linked in the dashboard instead. Upload the ZIP at the [OpenAI plugin dashboard](https://developers.openai.com/plugins/deploy/submission).
 
 ## Adding more
 
