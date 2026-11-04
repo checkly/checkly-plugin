@@ -60,7 +60,7 @@
             },
             {
               "description": "Create an API check from a description",
-              "prompt": "Add an API check for https://api.example.com/health that runs every 10 minutes from Frankfurt and fails on a non-200 response.",
+              "prompt": "Add an API check for https://example.com that runs every 10 minutes from Frankfurt and fails on a non-200 response.",
               "tools_triggered": "get-check-type-schema, create-check",
               "expected_behavior": "Read the API check schema, create the check in the connected account with the requested interval, location and assertion, then report the created check and its ID."
             },
