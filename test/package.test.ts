@@ -217,6 +217,9 @@ describe("createPackage", () => {
     assert.deepEqual(packaged.extensions["com.openai"].interface, source.interface);
     // Review material lives in the ZIP: the portal shows it read-only.
     const review = packaged.extensions["com.openai"].review;
+    // A remote MCP submission needs a demo recording, and the upload endpoint
+    // rejects the package with "Invalid URL" when the field is absent.
+    assert.ok(review.demo_recording_url.startsWith("https://"));
     assert.equal(review.test_cases.positive.length, 5);
     assert.equal(review.test_cases.negative.length, 3);
     for (const c of review.test_cases.positive) {
