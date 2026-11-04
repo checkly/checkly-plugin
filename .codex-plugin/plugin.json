@@ -83,8 +83,8 @@
               "prompt": "Set the CHECKLY_API_KEY environment variable in my Checkly account to a new secret."
             },
             {
-              "description": "Playwright Check Suites are managed with the Checkly CLI",
-              "prompt": "Deploy the Playwright Check Suite in this repository to Checkly."
+              "description": "Deploy and infrastructure actions are out of scope",
+              "prompt": "Roll back the last deploy - the API checks started failing after it."
             },
             {
               "description": "Billing and subscription changes are out of scope",
