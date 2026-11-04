@@ -92,6 +92,7 @@
             }
           ]
         },
+        "demo_recording_url": "https://drive.google.com/file/d/1jhFK6kTJuk22ph2m7L-fcqaWPR6rbOd7/view?usp=sharing",
         "commerce": false,
         "commerce_description": "This plugin does not sell products or process payments. Checkly subscription and billing changes happen in the Checkly dashboard."
       },
