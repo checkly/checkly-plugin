@@ -54,9 +54,9 @@
             },
             {
               "description": "Inspect the latest result of a failing check",
-              "prompt": "Show me the latest result for my API check and explain what failed.",
+              "prompt": "Show me the latest result for my API checks and explain what failed.",
               "tools_triggered": "list-check-results, get-check-result",
-              "expected_behavior": "Fetch the most recent result for the named check and summarise the failure, including response status and timing, without inventing values that the result does not contain."
+              "expected_behavior": "Fetch the most recent results for the account's API checks and summarise any failure, including response status and timing, without inventing values that the results do not contain."
             },
             {
               "description": "Create an API check from a description",
@@ -72,7 +72,7 @@
             },
             {
               "description": "Investigate a recurring failure",
-              "prompt": "Investigate why my checkout check has been failing this morning.",
+              "prompt": "Investigate why my Products API check has been failing this morning.",
               "tools_triggered": "get-error-group-root-cause-analyses, trigger-root-cause-analysis, get-root-cause-analysis",
               "expected_behavior": "Look up an existing root cause analysis for the failing check or start one, then summarise the probable cause from the returned analysis without speculating beyond it."
             }
